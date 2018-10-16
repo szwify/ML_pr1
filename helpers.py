@@ -22,6 +22,9 @@ def load_csv_data(data_path, sub_sample=False):
 
     return yb, input_data, ids
 
+def clean_data(input_data):
+    input_data[np.where(input_data==-999)] = np.nan
+    return input_data
 
 def predict_labels(weights, data):
     """Generates class predictions given weights, and a test data matrix"""
@@ -44,7 +47,7 @@ def create_csv_submission(ids, y_pred, name):
         writer = csv.DictWriter(csvfile, delimiter=",", fieldnames=fieldnames)
         writer.writeheader()
         for r1, r2 in zip(ids, y_pred):
-writer.writerow({'Id':int(r1),'Prediction':int(r2)})
+            writer.writerow({'Id':int(r1),'Prediction':int(r2)})
 
 
 def load_data(sub_sample=True, add_outlier=False):
