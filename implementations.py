@@ -67,8 +67,7 @@ def least_squares_SGD(
             ws.append(w)
             losses.append(loss)
 
-        print("SGD({bi}/{ti}): loss={l}, w0={w0}, w1={w1}".format(
-              bi=n_iter, ti=max_iters - 1, l=loss, w0=w[0], w1=w[1]))
+        
     return ws[-1], losses[-1]
 
 def ridge_regression(y, tx, lambda_):
