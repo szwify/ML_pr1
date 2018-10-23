@@ -66,7 +66,7 @@ class least_squares_GD(Model):
         for n_iter in range(self.max_iters):
             # compute loss, gradient
             grad, err = self.compute_gradient(y, tx, w)
-            loss = self.calculate_loss(y, tx, w)
+            loss = self.compute_loss(y, tx, w)
             # gradient w by descent update
             w = w - self.gamma * grad
             # store w and loss
