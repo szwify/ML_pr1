@@ -6,45 +6,41 @@ Created on Sun Oct 21 14:48:53 2018
 """
 import numpy as np
 
+def compute_error(y, tx, w):
+    return y - tx.dot(w)
+
+def calculate_mse(e):
+    """Calculate the mse for vector e."""
+    return 1/2*np.mean(e**2)
+
+def calculate_mae(e):
+    """Calculate the mae for vector e."""
+    return np.mean(np.abs(e))
+    
+    
+def compute_gradient_mse( y, tx, w):
+    """Compute the gradient."""
+    err = y - tx.dot(w)
+    grad = -tx.T.dot(err) / len(err)
+    return grad, err
+    
+def compute_gradient_mae( y, tx, w):
+    """Compute the gradient."""
+    print('Gradient MAE not impleted')
+    return None
+
+    
+def choose_function(loss_function):
+    if loss_function == 'mse':
+        return compute_gradient_mse, calculate_mse
+    if loss_function == 'mae':
+        return compute_gradient_mae, calculate_mae
+        
 class Model:
-    
-    
+    def __init__(self, args):
+        return
         
-    def calculate_mse(self, e):
-        """Calculate the mse for vector e."""
-        return 1/2*np.mean(e**2)
-    
-    def calculate_mae(self, e):
-        """Calculate the mae for vector e."""
-        return np.mean(np.abs(e))
-    
-    
-    def compute_loss(self, y, tx, w):
-        """Calculate the loss using mse"""
-        e = y - tx.dot(w)
-        
-        if self.loss_function_ == 'mse':
-            return self.calculate_mse(e)
-        if self.loss_function_ == 'mae':
-            return self.calculate_mse(e)
-        
-        
-    def compute_gradient_mse(self, y, tx, w):
-        """Compute the gradient."""
-        err = y - tx.dot(w)
-        grad = -tx.T.dot(err) / len(err)
-        return grad, err
-        
-    def compute_gradient_mae(self, y, tx, w):
-        """Compute the gradient."""
-        print('Gradient MAE not impleted')
-        return None
-    
-    def compute_gradient(self, y, tx, w):
-        if self.loss_function_ == 'mse':
-            return self.compute_gradient_mse(y, tx, w)
-        if self.loss_function_ == 'mae':
-            return self.compute_gradient_mae(y, tx, w)
+
             
 
 
@@ -54,21 +50,25 @@ class least_squares_GD(Model):
     def __init__(self, max_iters = 100, gamma = 1, loss_function = 'mse'):
         self.max_iters = max_iters
         self.gamma = gamma
-        self.loss_function_ = loss_function
+        self.compute_gradient, self.compute_loss = choose_function(loss_function)
         
     def fit(self, y, tx):
         """Gradient descent algorithm."""
         # Define parameters to store w and loss
+        gamma = self.gamma
+        compute_gradient, compute_loss = self.compute_gradient, self.compute_loss
+        
         initial_w = np.zeros((len(tx[0]),1))
         ws = [initial_w]
         losses = []
         w = initial_w
+        
         for n_iter in range(self.max_iters):
             # compute loss, gradient
-            grad, err = self.compute_gradient(y, tx, w)
-            loss = self.compute_loss(y, tx, w)
+            grad, err = compute_gradient(y, tx, w)
+            loss = compute_loss(err)
             # gradient w by descent update
-            w = w - self.gamma * grad
+            w = w - gamma * grad
             # store w and loss
             ws.append(w)
             losses.append(loss)
@@ -85,7 +85,7 @@ class least_squares_SGD(Model):
     def __init__(self, max_iters = 100, gamma = 1, loss_function = 'mse'):
         self.max_iters = max_iters
         self.gamma = gamma
-        self.loss_function_ = loss_function
+        self.compute_gradient, self.compute_loss = choose_function(loss_function)
         
     def batch_iter(self, y, tx, batch_size, num_batches=1, shuffle=True):
         """
@@ -116,6 +116,9 @@ class least_squares_SGD(Model):
         """Stochastic gradient descent."""
         # Define parameters to store w and loss
         # Use the standard mini-batch-size 1
+        gamma = self.gamma
+        compute_gradient, compute_loss = self.compute_gradient, self.compute_loss
+        
         batch_size = 1
         initial_w = np.zeros((len(tx[0]),1))
         ws = [initial_w]
@@ -124,11 +127,11 @@ class least_squares_SGD(Model):
         for n_iter in range(self.max_iters):
             for y_batch, tx_batch in self.batch_iter(y, tx, batch_size=batch_size, num_batches=1):
                 # compute a stochastic gradient and loss
-                grad, _ = self.compute_gradient(y_batch, tx_batch, w)
+                grad, err = compute_gradient(y_batch, tx_batch, w)
                 # update w through the stochastic gradient update
-                w = w - self.gamma * grad
+                w = w - gamma * grad
                 # calculate loss
-                loss = self.compute_loss(y, tx, w)
+                loss = compute_loss(err)
                 # store w and loss
                 ws.append(w)
                 losses.append(loss)

@@ -6,6 +6,7 @@ Created on Tue Oct 23 14:13:50 2018
 """
 
 import numpy as np
+from Model import *
 
 def build_k_indices(y, k_fold, seed):
     """build k indices for k-fold."""
@@ -33,12 +34,15 @@ def cross_validation(model, y, x, k_fold, seed = 1):
         x_tr = x[index_tr]
         y_tr = y[index_tr]
 
-        model.fit(x_tr, y_tr)
-        loss_test = model.compute_loss(x_te, y_te, model.w_)
-        loss_train = model.compute_loss(x_tr, y_tr, model.w_)
+        model.fit(y_tr, x_tr)
+        err_te = compute_error(y_te, x_te, model.w_)
+        err_tr = compute_error(y_tr, x_tr, model.w_)
         
-        losses_test.append(loss_test)
-        losses_train.append(loss_train)
+        loss_te = model.compute_loss(err_te)
+        loss_tr = model.compute_loss(err_tr)
+        
+        losses_test.append(loss_te)
+        losses_train.append(loss_tr)
         
     return losses_train, losses_test
 
