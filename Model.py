@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Oct 21 14:48:53 2018
-
 @author: Sacha
 """
 import numpy as np
@@ -40,26 +39,7 @@ class Model:
     def __init__(self, args):
         return
         
-<<<<<<< HEAD:Model-premodif.py
-    def compute_gradient_mae(self, y, tx, w):
-        """Compute the gradient."""
-        print('Gradient MAE not impleted')
-        return None
-    
-    def compute_gradient(self, y, tx, w):
-        if self.loss_function_ == 'mse':
-            return self.compute_gradient_mse(y, tx, w)
-        if self.loss_function_ == 'mae':
-            return self.compute_gradient_mae(y, tx, w)
-        
-    def compute_stoch_gradient(self, y, tx, w):
-        """Compute a stochastic gradient for batch data."""
-        err = y - tx.dot(w)
-        grad = -tx.T.dot(err) / len(err)
-        return grad, err
-=======
 
->>>>>>> 88cb4ce4b59b667d739125a6bda019589c8fee5c:Model.py
             
 
 
@@ -84,13 +64,8 @@ class least_squares_GD(Model):
         
         for n_iter in range(self.max_iters):
             # compute loss, gradient
-<<<<<<< HEAD:Model-premodif.py
-            grad, err = self.compute_gradient(y, tx, w)
-            loss = self.calculate_loss(y, tx, w)
-=======
             grad, err = compute_gradient(y, tx, w)
             loss = compute_loss(err)
->>>>>>> 88cb4ce4b59b667d739125a6bda019589c8fee5c:Model.py
             # gradient w by descent update
             w = w - gamma * grad
             # store w and loss
@@ -151,11 +126,7 @@ class least_squares_SGD(Model):
         for n_iter in range(self.max_iters):
             for y_batch, tx_batch in self.batch_iter(y, tx, batch_size=batch_size, num_batches=1):
                 # compute a stochastic gradient and loss
-<<<<<<< HEAD:Model-premodif.py
-                grad, _ = self.compute_stoch_gradient(y_batch, tx_batch, w)
-=======
                 grad, err = compute_gradient(y_batch, tx_batch, w)
->>>>>>> 88cb4ce4b59b667d739125a6bda019589c8fee5c:Model.py
                 # update w through the stochastic gradient update
                 w = w - gamma * grad
                 # calculate loss
@@ -188,8 +159,3 @@ class ridge_regression(Model):
 
     def predict(self, tx):
         return tx.dot(self.w_)
-    
-
-        
-    
-        
