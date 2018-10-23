@@ -45,6 +45,12 @@ class Model:
             return self.compute_gradient_mse(y, tx, w)
         if self.loss_function_ == 'mae':
             return self.compute_gradient_mae(y, tx, w)
+        
+    def compute_stoch_gradient(self, y, tx, w):
+        """Compute a stochastic gradient for batch data."""
+        err = y - tx.dot(w)
+        grad = -tx.T.dot(err) / len(err)
+        return grad, err
             
 
 
@@ -66,7 +72,7 @@ class least_squares_GD(Model):
         for n_iter in range(self.max_iters):
             # compute loss, gradient
             grad, err = self.compute_gradient(y, tx, w)
-            loss = self.compute_loss(y, tx, w)
+            loss = self.calculate_loss(y, tx, w)
             # gradient w by descent update
             w = w - self.gamma * grad
             # store w and loss
@@ -124,7 +130,7 @@ class least_squares_SGD(Model):
         for n_iter in range(self.max_iters):
             for y_batch, tx_batch in self.batch_iter(y, tx, batch_size=batch_size, num_batches=1):
                 # compute a stochastic gradient and loss
-                grad, _ = self.compute_gradient(y_batch, tx_batch, w)
+                grad, _ = self.compute_stoch_gradient(y_batch, tx_batch, w)
                 # update w through the stochastic gradient update
                 w = w - self.gamma * grad
                 # calculate loss
