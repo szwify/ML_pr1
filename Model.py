@@ -10,11 +10,11 @@ def compute_error(y, tx, w):
 
 def calculate_mse(e):
     """Calculate the mse for vector e."""
-    return 1/2*np.mean(e**2)
+    return 1/2*np.mean(e**2)/len(e)
 
 def calculate_mae(e):
     """Calculate the mae for vector e."""
-    return np.mean(np.abs(e))
+    return np.mean(np.abs(e))/len(e)
     
     
 def compute_gradient_mse( y, tx, w):
@@ -81,9 +81,10 @@ class least_squares_GD(Model):
     
 class least_squares_SGD(Model):
      
-    def __init__(self, max_iters = 100, gamma = 1, loss_function = 'mse'):
+    def __init__(self, max_iters = 100, gamma = 1, lambda_ = 1, loss_function = 'mse'):
         self.max_iters = max_iters
         self.gamma = gamma
+        self.lambda_ = lambda_
         self.compute_gradient, self.compute_loss = choose_function(loss_function)
         
     def batch_iter(self, y, tx, batch_size, num_batches=1, shuffle=True):
@@ -116,6 +117,7 @@ class least_squares_SGD(Model):
         # Define parameters to store w and loss
         # Use the standard mini-batch-size 1
         gamma = self.gamma
+        lambda_ = self.lambda_
         compute_gradient, compute_loss = self.compute_gradient, self.compute_loss
         
         batch_size = 1
@@ -128,7 +130,7 @@ class least_squares_SGD(Model):
                 # compute a stochastic gradient and loss
                 grad, err = compute_gradient(y_batch, tx_batch, w)
                 # update w through the stochastic gradient update
-                w = w - gamma * grad
+                w = w*(1-lambda_*gamma) - gamma * grad
                 # calculate loss
                 loss = compute_loss(err)
                 # store w and loss
@@ -148,14 +150,14 @@ class ridge_regression(Model):
      
     def __init__(self, lamb = 1):
         self.lambda_ = lamb
-        self.loss_function_ = 'mse'
+        self.compute_gradient, self.compute_loss = choose_function('mse')
         
     def fit(self, y,tx):
         aI = self.lambda_ * np.identity(tx.shape[1])
         a = tx.T.dot(tx) + aI
         b = tx.T.dot(y)
         self.w_ = np.linalg.solve(a, b)
-        self.losses_ = self.compute_loss(y, tx, self.w_)
+        self.losses_ = self.compute_loss(y - tx.dot(self.w_))
 
     def predict(self, tx):
         return tx.dot(self.w_)
