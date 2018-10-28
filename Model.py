@@ -73,7 +73,7 @@ def calculate_gradient(y, tx, w):
     # INSERT YOUR CODE HERE
     # TODO
     # ***************************************************
-    return tx.T.dot((sigmoid(subtract_by_part(tx.dot(w),y, 10000))))
+    return tx.T.dot((sigmoid(tx.dot(w)-y)))
 
 def calculate_loss(y, tx, w):
     """compute the cost by negative log likelihood."""
@@ -81,10 +81,7 @@ def calculate_loss(y, tx, w):
     # INSERT YOUR CODE HERE
     # TODO
     # ***************************************************  
-    log_lh = 0
-    for row in range (0, len(tx)):
-        log_lh += np.log(1+np.exp(tx[row].T.dot(w)))-y[row]*tx[row].T.dot(w)
-    return log_lh
+    return np.mean(np.log(1+np.exp(tx.dot(w)))-y*tx.dot(w))
     
 
 def logistic_regression(y, tx, w):
@@ -114,6 +111,31 @@ def learning_by_newton_method(y, tx, w):
     # ***************************************************
     w = w-np.linalg.inv(hessian).dot(grad)
     return loss, w
+
+def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
+        """
+        Generate a minibatch iterator for a dataset.
+        Takes as input two iterables (here the output desired values 'y' and the input data 'tx')
+        Outputs an iterator which gives mini-batches of `batch_size` matching elements from `y` and `tx`.
+        Data can be randomly shuffled to avoid ordering in the original data messing with the randomness of the minibatches.
+        Example of use :
+        for minibatch_y, minibatch_tx in batch_iter(y, tx, 32):
+            <DO-SOMETHING>
+        """
+        data_size = len(y)
+    
+        if shuffle:
+            shuffle_indices = np.random.permutation(np.arange(data_size))
+            shuffled_y = y[shuffle_indices]
+            shuffled_tx = tx[shuffle_indices]
+        else:
+            shuffled_y = y
+            shuffled_tx = tx
+        for batch_num in range(num_batches):
+            start_index = batch_num * batch_size
+            end_index = min((batch_num + 1) * batch_size, data_size)
+            if start_index != end_index:
+                yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
 def learning_by_gradient_descent(y, tx, w, gamma):
     """
@@ -190,30 +212,7 @@ class least_squares_SGD(Model):
         self.lambda_ = lambda_
         self.compute_gradient, self.compute_loss = choose_function(loss_function)
         
-    def batch_iter(self, y, tx, batch_size, num_batches=1, shuffle=True):
-        """
-        Generate a minibatch iterator for a dataset.
-        Takes as input two iterables (here the output desired values 'y' and the input data 'tx')
-        Outputs an iterator which gives mini-batches of `batch_size` matching elements from `y` and `tx`.
-        Data can be randomly shuffled to avoid ordering in the original data messing with the randomness of the minibatches.
-        Example of use :
-        for minibatch_y, minibatch_tx in batch_iter(y, tx, 32):
-            <DO-SOMETHING>
-        """
-        data_size = len(y)
     
-        if shuffle:
-            shuffle_indices = np.random.permutation(np.arange(data_size))
-            shuffled_y = y[shuffle_indices]
-            shuffled_tx = tx[shuffle_indices]
-        else:
-            shuffled_y = y
-            shuffled_tx = tx
-        for batch_num in range(num_batches):
-            start_index = batch_num * batch_size
-            end_index = min((batch_num + 1) * batch_size, data_size)
-            if start_index != end_index:
-                yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
         
     def fit(self, y, tx):
         """Stochastic gradient descent."""
@@ -229,7 +228,7 @@ class least_squares_SGD(Model):
         losses = []
         w = initial_w
         for n_iter in range(self.max_iters):
-            for y_batch, tx_batch in self.batch_iter(y, tx, batch_size=batch_size, num_batches=1):
+            for y_batch, tx_batch in batch_iter(y, tx, batch_size=batch_size, num_batches=1):
                 # compute a stochastic gradient and loss
                 grad, err = compute_gradient(y_batch, tx_batch, w)
                 # update w through the stochastic gradient update
@@ -331,10 +330,11 @@ class logistic_regression_gradient(Model):
         return tx.dot(self.w_)
     
 class logistic_regression_SGD(Model):
-    def __init__(self, gamma = 0.001, max_iters = 100, treshold = 1e-8):
+    def __init__(self, gamma = 0.001, batch_size = 10000, max_iters = 100, treshold = 1e-8):
         self.max_iters = max_iters
         self.treshold = treshold
         self.gamma = gamma
+        self.batch_size = batch_size
         
     def fit(self, y, tx):
         # init parameters
@@ -342,18 +342,18 @@ class logistic_regression_SGD(Model):
         threshold = self.treshold
         gamma = self.gamma
         initial_w = np.zeros((len(tx[0]),1))
-        ws = [initial_w]
         losses = []
         w = initial_w
-    
+        end = False
         # start the logistic regression
         for e in range(max_iters):
-            # get loss and update w.
-            loss, w = learning_by_gradient_descent(y, tx, w, gamma)
-            # log info
-            # converge criterion
-            losses.append(loss)
-            if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+            for y_batch, tx_batch in batch_iter(y, tx, batch_size=self.batch_size, num_batches=1):
+                # get loss and update w.
+                loss, w = learning_by_gradient_descent(y_batch, tx_batch, w, gamma)
+                # log info
+                # converge criterion
+                losses.append(loss)
+            if end :
                 break
             
         self.losses_ = losses
