@@ -15,7 +15,18 @@ def calculate_mse(e):
 def calculate_mae(e):
     """Calculate the mae for vector e."""
     return np.mean(np.abs(e))/len(e)
-    
+
+def subtract_by_part(x1, x2, n):
+    l = len(x1)
+    ln = int(l/n)
+    sub = x1[0:n]-x2[0:n]
+    if l<n : return sub
+    for i in range(1, ln):
+        temp = x1[i*n:(i+1)*n]-x2[i*n:(i+1)*n]
+        sub = np.hstack((sub,temp))
+    temp = x1[ln*n:]-x2[ln*n:]
+    sub = np.hstack((sub,temp))
+    return sub
     
 def compute_gradient_mse( y, tx, w):
     """Compute the gradient."""
@@ -34,6 +45,98 @@ def choose_function(loss_function):
         return compute_gradient_mse, calculate_mse
     if loss_function == 'mae':
         return compute_gradient_mae, calculate_mae
+    
+
+
+def sigmoid(t):
+    """apply sigmoid function on t."""
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # TODO
+    # ***************************************************
+    return np.exp(t) / (1+np.exp(t))
+
+def calculate_hessian(y, tx, w):
+    """return the hessian of the loss function."""
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # calculate hessian: TODO
+    # ***************************************************
+    S = np.zeros((len(tx), len(tx)))
+    for row in range (0, len(tx)):
+        S[row, row] = sigmoid(tx[row].dot(w))*(1-sigmoid(tx[row].dot(w)))
+    return tx.T.dot(S.dot(tx))
+
+def calculate_gradient(y, tx, w):
+    """compute the gradient of loss."""
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # TODO
+    # ***************************************************
+    return tx.T.dot((sigmoid(subtract_by_part(tx.dot(w),y, 10000))))
+
+def calculate_loss(y, tx, w):
+    """compute the cost by negative log likelihood."""
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # TODO
+    # ***************************************************  
+    log_lh = 0
+    for row in range (0, len(tx)):
+        log_lh += np.log(1+np.exp(tx[row].T.dot(w)))-y[row]*tx[row].T.dot(w)
+    return log_lh
+    
+
+def logistic_regression(y, tx, w):
+    """return the loss, gradient, and hessian."""
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # return loss, gradient, and hessian: TODO
+    # ***************************************************
+    hessian = calculate_hessian(y, tx, w)
+    grad = calculate_gradient(y, tx, w)
+    loss = calculate_loss(y, tx, w)
+    return loss, grad, hessian
+
+def learning_by_newton_method(y, tx, w):
+    """
+    Do one step on Newton's method.
+    return the loss and updated w.
+    """
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # return loss, gradient and hessian: TODO
+    # ***************************************************
+    loss, grad, hessian = logistic_regression(y, tx, w)
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # update w: TODO
+    # ***************************************************
+    w = w-np.linalg.inv(hessian).dot(grad)
+    return loss, w
+
+def learning_by_gradient_descent(y, tx, w, gamma):
+    """
+    Do one step of gradient descen using logistic regression.
+    Return the loss and the updated w.
+    """
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # compute the cost: TODO
+    # ***************************************************
+    loss = calculate_loss(y, tx, w)
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # compute the gradient: TODO
+    # ***************************************************
+    grad = calculate_gradient(y, tx, w)
+    # ***************************************************
+    # INSERT YOUR CODE HERE
+    # update w: TODO
+    # ***************************************************
+    w = w-gamma*grad
+    return loss, w
+
         
 class Model:
     def __init__(self, args):
@@ -159,5 +262,103 @@ class ridge_regression(Model):
         self.w_ = np.linalg.solve(a, b)
         self.losses_ = self.compute_loss(y - tx.dot(self.w_))
 
+    def predict(self, tx):
+        return tx.dot(self.w_)
+
+class logistic_regression_Newton(Model):
+    def __init__(self, max_iters = 100, treshold = 1e-8):
+        self.max_iters = max_iters
+        self.treshold = treshold
+        
+    def fit(self, y, tx):
+        # init parameters
+        max_iters = self.max_iters
+        threshold = self.treshold
+        
+        initial_w = np.zeros((len(tx[0]),1))
+        ws = [initial_w]
+        losses = []
+        w = initial_w
+    
+        # start the logistic regression
+        for e in range(max_iters):
+            # get loss and update w.
+            loss, w = learning_by_newton_method(y, tx, w)
+            # log info
+            # converge criterion
+            losses.append(loss)
+            if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+                break
+            
+        self.losses_ = losses
+        self.w_ = w
+        return None
+    
+    def predict(self, tx):
+        return tx.dot(self.w_)
+    
+class logistic_regression_gradient(Model):
+    def __init__(self, gamma = 0.001, max_iters = 100, treshold = 1e-8):
+        self.max_iters = max_iters
+        self.treshold = treshold
+        self.gamma = gamma
+        
+    def fit(self, y, tx):
+        # init parameters
+        max_iters = self.max_iters
+        threshold = self.treshold
+        gamma = self.gamma
+        initial_w = np.zeros((len(tx[0]),1))
+        ws = [initial_w]
+        losses = []
+        w = initial_w
+    
+        # start the logistic regression
+        for e in range(max_iters):
+            # get loss and update w.
+            loss, w = learning_by_gradient_descent(y, tx, w, gamma)
+            # log info
+            # converge criterion
+            losses.append(loss)
+            if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+                break
+            
+        self.losses_ = losses
+        self.w_ = w
+        return None
+    
+    def predict(self, tx):
+        return tx.dot(self.w_)
+    
+class logistic_regression_SGD(Model):
+    def __init__(self, gamma = 0.001, max_iters = 100, treshold = 1e-8):
+        self.max_iters = max_iters
+        self.treshold = treshold
+        self.gamma = gamma
+        
+    def fit(self, y, tx):
+        # init parameters
+        max_iters = self.max_iters
+        threshold = self.treshold
+        gamma = self.gamma
+        initial_w = np.zeros((len(tx[0]),1))
+        ws = [initial_w]
+        losses = []
+        w = initial_w
+    
+        # start the logistic regression
+        for e in range(max_iters):
+            # get loss and update w.
+            loss, w = learning_by_gradient_descent(y, tx, w, gamma)
+            # log info
+            # converge criterion
+            losses.append(loss)
+            if len(losses) > 1 and np.abs(losses[-1] - losses[-2]) < threshold:
+                break
+            
+        self.losses_ = losses
+        self.w_ = w
+        return None
+    
     def predict(self, tx):
         return tx.dot(self.w_)
