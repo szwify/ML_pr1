@@ -47,6 +47,40 @@ def cross_validation(model, y, x, k_fold, seed = 1):
         
     return losses_train, losses_test
 
+def cross_validation_logistic(model, y, x, k_fold, seed = 1):
+    """return the loss of ridge regression."""
+    k_indices = build_k_indices(y, k_fold, seed)
+    losses_test = []
+    losses_train = []
+    for k in range(k_fold):
+        selector_tr = [row for row in range(k_indices.shape[0]) if row != k]
+        index_tr = k_indices[selector_tr].flatten()
+
+        index_te = k_indices[k].flatten()
+
+        x_te = x[index_te]
+        y_te = y[index_te]
+        x_tr = x[index_tr]
+        y_tr = y[index_tr]
+
+        model.fit(y_tr, x_tr)
+        te_batch = batch_iter(y_te, x_te, batch_size=1000, num_batches=1, shuffle=True)
+        tr_batch = batch_iter(y_tr, x_tr, batch_size=1000, num_batches=1, shuffle=True)
+        
+        (y_te_batch, tx_te_batch) = [e for e in te_batch][0]
+        (y_tr_batch, tx_tr_batch) = [e for e in tr_batch][0]
+        
+        err_te = compute_error(y_te, x_te, model.w_)
+        err_tr = compute_error(y_tr, x_tr, model.w_)
+        
+        loss_te = np.sqrt(2*calculate_mse(err_te))
+        loss_tr = np.sqrt(2*calculate_mse(err_tr))
+        
+        losses_test.append(loss_te)
+        losses_train.append(loss_tr)
+        
+    return losses_train, losses_test
+
 def cross_validation_visualization(lambds, mse_tr, mse_te):
     """visualization the curves of mse_tr and mse_te."""
     plt.semilogx(lambds, mse_tr, marker=".", color='b', label='train error')
