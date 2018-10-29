@@ -336,6 +336,7 @@ class logistic_regression_SGD(Model):
         # start the logistic regression
         for e in range(max_iters):
             for y_batch, tx_batch in batch_iter(y, tx, batch_size=batch_size, num_batches=1):
+                
                 # get loss and update w.
 				
                 

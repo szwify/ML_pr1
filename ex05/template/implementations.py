@@ -151,7 +151,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
             
             grad, _ = compute_gradient_sig_mse(y_batch, tx_batch, w)
             loss = calculate_sig_mse(y_batch, tx_batch,w)
-            w = (1-2*gamma*lambda_)*w-gamma*grad
+            w = (1-2*lambda_)*w-gamma*grad
     				
 
             losses.append(loss)
